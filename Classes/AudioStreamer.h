@@ -30,9 +30,11 @@
 #include <pthread.h>
 #include <AudioToolbox/AudioToolbox.h>
 
+#import "AsyncUdpSocket.h"
+
 #define LOG_QUEUED_BUFFERS 0
 
-#define kNumAQBufs 16			// Number of audio queue buffers we allocate.
+#define kNumAQBufs 4			// Number of audio queue buffers we allocate.
 								// Needs to be big enough to keep audio pipeline
 								// busy (non-zero number of queued buffers) but
 								// not so big that audio takes too long to begin
@@ -44,7 +46,7 @@
 								// to zero too often, this value may need to
 								// increase. Min 3, typical 8-24.
 								
-#define kAQDefaultBufSize 2048	// Number of bytes in each audio queue buffer
+#define kAQDefaultBufSize 1312	// Number of bytes in each audio queue buffer
 								// Needs to be big enough to hold a packet of
 								// audio from the audio file. If number is too
 								// large, queuing of audio before playback starts
@@ -167,6 +169,11 @@ extern NSString * const ASStatusChangedNotification;
 #if TARGET_OS_IPHONE
 	BOOL pausedByInterruption;
 #endif
+    
+    
+    AsyncUdpSocket *listenSocket;    
+    UInt16 multicast_port;
+    NSString* multicast_group;
 }
 
 @property AudioStreamerErrorCode errorCode;

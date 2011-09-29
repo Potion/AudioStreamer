@@ -78,6 +78,9 @@ NSString * const AS_AUDIO_BUFFER_TOO_SMALL_STRING = @"Audio packets are larger t
 - (void)handleReadFromStream:(CFReadStreamRef)aStream
 	eventType:(CFStreamEventType)eventType;
 
+- (BOOL)onUdpSocket:(AsyncUdpSocket *)sock didReceiveData:(NSData *)data withTag:(long)tag 
+           fromHost:(NSString *)host port:(UInt16)port;
+
 @end
 
 #pragma mark Audio Callback Function Prototypes
@@ -436,6 +439,7 @@ void ASReadStreamCallBack
 			state == AS_BUFFERING)
 		{
 			self.state = AS_STOPPING;
+            NSLog(@"AS_STOPPING");
 			stopReason = AS_STOPPING_ERROR;
 			AudioQueueStop(audioQueue, true);
 		}
@@ -478,6 +482,7 @@ void ASReadStreamCallBack
 		if (state != aStatus)
 		{
 			state = aStatus;
+            NSLog(@"%d",state);
 			
 			if ([[NSThread currentThread] isEqual:[NSThread mainThread]])
 			{
@@ -617,6 +622,48 @@ void ASReadStreamCallBack
 // Open the audioFileStream to parse data and the fileHandle as the data
 // source.
 //
+- (BOOL)openMulticastReadStream
+{
+	@synchronized(self)
+	{
+		NSAssert([[NSThread currentThread] isEqual:internalThread],
+                 @"File stream download must be started on the internalThread");
+		NSAssert(stream == nil, @"Download stream already initialized");
+        
+        listenSocket  =  [[AsyncUdpSocket alloc] initWithDelegate:self];
+        
+		//
+		// We're now ready to receive data
+		//
+		self.state = AS_WAITING_FOR_DATA;
+        NSLog(@"AS_WAITING_FOR_DATA");
+        
+        multicast_port = 1234;
+        multicast_group = @"239.255.0.1";
+        
+        NSError *error = nil; 
+        if(![listenSocket bindToPort:multicast_port error:&error]){
+			[self presentAlertWithTitle:NSLocalizedStringFromTable(@"File Error", @"Errors", nil)
+								message:NSLocalizedStringFromTable(@"Unable to configure network read stream.", @"Errors", nil)];
+			return NO;
+        } else if(![listenSocket joinMulticastGroup:multicast_group error:&error]) { 
+			[self presentAlertWithTitle:NSLocalizedStringFromTable(@"File Error", @"Errors", nil)
+								message:NSLocalizedStringFromTable(@"Unable to configure network read stream.", @"Errors", nil)];
+			return NO;
+        } else {
+            NSLog(@"-------- Multicast Client Started --------");
+            [listenSocket receiveWithTimeout:-1 tag:0];
+        }
+    }
+	return YES;
+}
+
+//
+// openReadStream
+//
+// Open the audioFileStream to parse data and the fileHandle as the data
+// source.
+//
 - (BOOL)openReadStream
 {
 	@synchronized(self)
@@ -624,7 +671,7 @@ void ASReadStreamCallBack
 		NSAssert([[NSThread currentThread] isEqual:internalThread],
 			@"File stream download must be started on the internalThread");
 		NSAssert(stream == nil, @"Download stream already initialized");
-		
+
 		//
 		// Create the HTTP GET request
 		//
@@ -689,6 +736,7 @@ void ASReadStreamCallBack
 		// We're now ready to receive data
 		//
 		self.state = AS_WAITING_FOR_DATA;
+        NSLog(@"AS_WAITING_FOR_DATA");
 
 		//
 		// Open the stream
@@ -752,9 +800,10 @@ void ASReadStreamCallBack
 			if (state != AS_STOPPING &&
 				state != AS_STOPPED)
 			{
-				NSLog(@"### Not starting audio thread. State code is: %ld", state);
+				NSLog(@"### Not starting audio thread. State code is: %u", state);
 			}
 			self.state = AS_INITIALIZED;
+            NSLog(@"AS_INITIALIZED");
 			[pool release];
 			return;
 		}
@@ -783,7 +832,8 @@ void ASReadStreamCallBack
 		pthread_mutex_init(&queueBuffersMutex, NULL);
 		pthread_cond_init(&queueBufferReadyCondition, NULL);
 		
-		if (![self openReadStream])
+//		if (![self openReadStream])
+        if (![self openMulticastReadStream])
 		{
 			goto cleanup;
 		}
@@ -820,6 +870,7 @@ void ASReadStreamCallBack
 				return;
 			}
 			self.state = AS_BUFFERING;
+            NSLog(@"AS_BUFFERING");
 		}
 	} while (isRunning && ![self runLoopShouldExit]);
 	
@@ -878,6 +929,7 @@ cleanup:
 		seekByteOffset = 0;
 		packetBufferSize = 0;
 		self.state = AS_INITIALIZED;
+        NSLog(@"AS_INITIALIZED");
 
 		[internalThread release];
 		internalThread = nil;
@@ -906,6 +958,7 @@ cleanup:
 			notificationCenter =
 				[[NSNotificationCenter defaultCenter] retain];
 			self.state = AS_STARTING_FILE_THREAD;
+            NSLog(@"AS_STARTING_FILE_THREAD");
 			internalThread =
 				[[NSThread alloc]
 					initWithTarget:self
@@ -981,6 +1034,7 @@ cleanup:
 	// Stop the audio queue
 	//
 	self.state = AS_STOPPING;
+    NSLog(@"AS_STOPPING");
 	stopReason = AS_STOPPING_TEMPORARILY;
 	err = AudioQueueStop(audioQueue, true);
 	if (err)
@@ -1119,6 +1173,7 @@ cleanup:
 				return;
 			}
 			self.state = AS_PAUSED;
+            NSLog(@"AS_PAUSED");
 		}
 		else if (state == AS_PAUSED)
 		{
@@ -1129,6 +1184,7 @@ cleanup:
 				return;
 			}
 			self.state = AS_PLAYING;
+            NSLog(@"AS_PLAYING");
 		}
 	}
 }
@@ -1152,6 +1208,7 @@ cleanup:
 				state == AS_BUFFERING || state == AS_WAITING_FOR_QUEUE_TO_START))
 		{
 			self.state = AS_STOPPING;
+            NSLog(@"AS_STOPPING");
 			stopReason = AS_STOPPING_USER_ACTION;
 			err = AudioQueueStop(audioQueue, true);
 			if (err)
@@ -1163,6 +1220,7 @@ cleanup:
 		else if (state != AS_INITIALIZED)
 		{
 			self.state = AS_STOPPED;
+            NSLog(@"AS_STOPPED");
 			stopReason = AS_STOPPING_USER_ACTION;
 		}
 		seekWasRequested = NO;
@@ -1220,6 +1278,7 @@ cleanup:
 				// Force audio data smaller than one whole buffer to play.
 				//
 				self.state = AS_FLUSHING_EOF;
+                NSLog(@"AS_FLUSHING_EOF");
 			}
 			[self enqueueBuffer];
 		}
@@ -1251,6 +1310,7 @@ cleanup:
 					}
 
 					self.state = AS_STOPPING;
+                    NSLog(@"AS_STOPPING");
 					stopReason = AS_STOPPING_EOF;
 					err = AudioQueueStop(audioQueue, false);
 					if (err)
@@ -1262,6 +1322,7 @@ cleanup:
 				else
 				{
 					self.state = AS_STOPPED;
+                    NSLog(@"AS_STOPPED");
 					stopReason = AS_STOPPING_EOF;
 				}
 			}
@@ -1356,6 +1417,52 @@ cleanup:
 	}
 }
 
+- (BOOL)onUdpSocket:(AsyncUdpSocket *)sock didReceiveData:(NSData *)data withTag:(long)tag 
+           fromHost:(NSString *)host port:(UInt16)port 
+{
+    UInt32 len = (UInt32)[data length];
+    UInt32 range_len = len-4;
+    
+    UInt8 bytes[kAQDefaultBufSize];
+    
+//    NSRange range = {4, MIN(range_len,kAQDefaultBufSize)};    
+//    [data getBytes:bytes range:range];
+    
+    [data getBytes:bytes length:len];
+    range_len = len;
+
+//    printf("------------------------------------------------  %lu\n", range_len);
+//    for (int i=0; i<8; ++i) {
+//        printf(" %x",bytes[i]);
+//    }
+//    printf("\n");
+//    NSLog(@"-----------------------------------------------------------------------------\n\
+//          received multicast packet with size: %lu\n%@", len, bytes);
+
+    if (!audioFileStream)
+    {
+        // create an audio file stream parser
+        err = AudioFileStreamOpen(self, MyPropertyListenerProc, MyPacketsProc, 
+                                  kAudioFileMP3Type, &audioFileStream);
+        if (err)
+        {
+            [self failWithErrorCode:AS_FILE_STREAM_OPEN_FAILED];
+            return false;
+        }
+    }
+    
+    err = AudioFileStreamParseBytes(audioFileStream, range_len, bytes, 0);
+    if (err)
+    {
+        [self failWithErrorCode:AS_FILE_STREAM_PARSE_BYTES_FAILED];
+        return false;
+    }
+    
+    [listenSocket receiveWithTimeout:-1 tag:0];
+    
+    return true;
+}
+
 //
 // enqueueBuffer
 //
@@ -1371,7 +1478,8 @@ cleanup:
 {
 	@synchronized(self)
 	{
-		if ([self isFinishing] || stream == 0)
+//		if ([self isFinishing] || stream == 0)
+        if ([self isFinishing])
 		{
 			return;
 		}
@@ -1420,10 +1528,12 @@ cleanup:
 						return;
 					}
 					self.state = AS_PLAYING;
+                    NSLog(@"AS_PLAYING");
 				}
 				else
 				{
 					self.state = AS_WAITING_FOR_QUEUE_TO_START;
+                    NSLog(@"AS_WAITING_FOR_QUEUE_TO_START");
 
 					err = AudioQueueStart(audioQueue, NULL);
 					if (err)
@@ -1697,7 +1807,11 @@ cleanup:
 	}
 
 	// the following code assumes we're streaming VBR data. for CBR data, the second branch is used.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Replacing inPacketDescriptions
 	if (inPacketDescriptions)
+//    if (false)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////        
 	{
 		for (int i = 0; i < inNumberPackets; ++i)
 		{
@@ -1895,6 +2009,7 @@ cleanup:
 			if (state == AS_STOPPING)
 			{
 				self.state = AS_STOPPED;
+                NSLog(@"AS_STOPPED");
 			}
 			else if (state == AS_WAITING_FOR_QUEUE_TO_START)
 			{
@@ -1916,6 +2031,7 @@ cleanup:
 				[NSRunLoop currentRunLoop];
 
 				self.state = AS_PLAYING;
+                NSLog(@"AS_PLAYING");
 			}
 			else
 			{
