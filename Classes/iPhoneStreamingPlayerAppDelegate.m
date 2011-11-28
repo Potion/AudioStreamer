@@ -23,18 +23,37 @@
 
 #import "iPhoneStreamingPlayerAppDelegate.h"
 #import "iPhoneStreamingPlayerViewController.h"
+#import "ios-ntp.h"
 
 @implementation iPhoneStreamingPlayerAppDelegate
 
 @synthesize window;
 @synthesize viewController;
 
-- (void)applicationDidFinishLaunching:(UIApplication *)application {
+//- (void)applicationDidFinishLaunching:(UIApplication *)application {
+- (BOOL)application:(UIApplication *) app didFinishLaunchingWithOptions:(NSDictionary *) options {
+
     // Override point for customization after app launch    
     [window addSubview:viewController.view];
     [window makeKeyAndVisible];
 	
 	[viewController buttonPressed:nil];
+    
+    
+//    [NetworkClock sharedNetworkClock];                      // gather up the ntp servers ...
+//    /*┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+//     │  Create a timer that will fire in ten seconds and then every ten seconds thereafter to ask the   │
+//     │ network clock what time it is.                                                                   │
+//     └──────────────────────────────────────────────────────────────────────────────────────────────────┘*/
+//    NSTimer * repeatingTimer = [[NSTimer alloc]
+//                                initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:1.0]
+//                                interval:1.0 target:self selector:@selector(repeatingMethod:)
+//                                userInfo:nil repeats:YES];
+//    
+//    [[NSRunLoop currentRunLoop] addTimer:repeatingTimer forMode:NSDefaultRunLoopMode];
+//    [repeatingTimer release];
+    
+    return YES;
 }
 
 

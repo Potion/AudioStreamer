@@ -831,9 +831,12 @@ void ASReadStreamCallBack
 		// initialize a mutex and condition so that we can block on buffers in use.
 		pthread_mutex_init(&queueBuffersMutex, NULL);
 		pthread_cond_init(&queueBufferReadyCondition, NULL);
-		
-//		if (![self openReadStream])
+
+    #if UDP_STREAM
         if (![self openMulticastReadStream])
+    #else
+        if (![self openReadStream])
+    #endif
 		{
 			goto cleanup;
 		}
@@ -842,6 +845,7 @@ void ASReadStreamCallBack
 	//
 	// Process the run loop until playback is finished or failed.
 	//
+    
 	BOOL isRunning = YES;
 	do
 	{
@@ -947,6 +951,10 @@ cleanup:
 {
 	@synchronized (self)
 	{
+//        NSDate* fisrt_date = [NSDate date];
+//        NSLog(@"%0.3f",[[NSDate date] timeIntervalSinceDate:fisrt_date]);
+        bitRate = 32000;
+        
 		if (state == AS_PAUSED)
 		{
 			[self pause];
@@ -1152,6 +1160,8 @@ cleanup:
 		return 0.0;
 	}
 	
+//    double duration = (fileLength - dataOffset) / (calculatedBitRate * 0.125);
+//    NSLog(@"fileLength: %d\ndataOffset: %d\ncalculatedBitRate: %f\nduration: %f",fileLength,dataOffset,calculatedBitRate,duration);
 	return (fileLength - dataOffset) / (calculatedBitRate * 0.125);
 }
 
@@ -1162,6 +1172,7 @@ cleanup:
 //
 - (void)pause
 {
+    NSLog(@"seekTime: %f",[self progress]);
 	@synchronized(self)
 	{
 		if (state == AS_PLAYING)
@@ -1201,6 +1212,9 @@ cleanup:
 //
 - (void)stop
 {
+    [self pause];
+    return;
+    
 	@synchronized(self)
 	{
 		if (audioQueue &&
@@ -1241,6 +1255,7 @@ cleanup:
 //    aStream - the network file stream
 //    eventType - the event which triggered this method
 //
+int first = 0;
 - (void)handleReadFromStream:(CFReadStreamRef)aStream
 	eventType:(CFStreamEventType)eventType
 {
@@ -1330,6 +1345,22 @@ cleanup:
 	}
 	else if (eventType == kCFStreamEventHasBytesAvailable)
 	{
+        if ([self progress]>0 && !first) {
+            first++;
+            double seek_time = 50.0;
+            [self seekToTime:seek_time];
+            [self pause];
+            
+            NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
+            [dateFormatter setDateFormat:@"yyyy-mm-dd hh:mm:ss.SSS"];
+            NSDate *date1 = [dateFormatter dateFromString:@"2011-11-27 22:47:44.033"];
+            NSDate *date2 = [dateFormatter dateFromString:@"2011-11-27 22:47:44.225"];
+            NSTimeInterval interval = [date1 timeIntervalSinceDate:date2];
+            
+            NSLog(@"%@",date2);
+            NSLog(@"%f",interval);
+        }
+        
 		if (!httpHeaders)
 		{
 			CFTypeRef message =
@@ -1439,7 +1470,7 @@ cleanup:
 //    NSLog(@"-----------------------------------------------------------------------------\n\
 //          received multicast packet with size: %lu\n%@", len, bytes);
 
-    if (!audioFileStream)
+    if (audioFileStream == nil)
     {
         // create an audio file stream parser
         err = AudioFileStreamOpen(self, MyPropertyListenerProc, MyPacketsProc, 
@@ -1478,8 +1509,11 @@ cleanup:
 {
 	@synchronized(self)
 	{
-//		if ([self isFinishing] || stream == 0)
+    #if UDP_STREAM
         if ([self isFinishing])
+    #else
+        if ([self isFinishing] || stream == 0)
+    #endif
 		{
 			return;
 		}
@@ -1807,11 +1841,7 @@ cleanup:
 	}
 
 	// the following code assumes we're streaming VBR data. for CBR data, the second branch is used.
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Replacing inPacketDescriptions
 	if (inPacketDescriptions)
-//    if (false)
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////        
 	{
 		for (int i = 0; i < inNumberPackets; ++i)
 		{

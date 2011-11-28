@@ -32,6 +32,8 @@
 
 #import "AsyncUdpSocket.h"
 
+#define UDP_STREAM false
+
 #define LOG_QUEUED_BUFFERS 0
 
 #define kNumAQBufs 4			// Number of audio queue buffers we allocate.

@@ -108,7 +108,7 @@
 	
 	progressUpdateTimer =
 		[NSTimer
-			scheduledTimerWithTimeInterval:0.1
+			scheduledTimerWithTimeInterval:0.001
 			target:self
 			selector:@selector(updateProgress:)
 			userInfo:nil
@@ -268,7 +268,7 @@
 		if (duration > 0)
 		{
 			[positionLabel setText:
-				[NSString stringWithFormat:@"Time Played: %.1f/%.1f seconds",
+				[NSString stringWithFormat:@"Time Played: %.3f/%.3f seconds",
 					progress,
 					duration]];
 			[progressSlider setEnabled:YES];
