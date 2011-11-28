@@ -13,6 +13,11 @@
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765A40DF7441C002DB57D /* CoreGraphics.framework */; };
 		28D7ACF80DDB3853001CB0EB /* iPhoneStreamingPlayerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 28D7ACF70DDB3853001CB0EB /* iPhoneStreamingPlayerViewController.m */; };
+		5CB01D3E1480620200770851 /* NetAssociation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5CB01D391480620200770851 /* NetAssociation.m */; };
+		5CB01D3F1480620200770851 /* NetworkClock.m in Sources */ = {isa = PBXBuildFile; fileRef = 5CB01D3B1480620200770851 /* NetworkClock.m */; };
+		5CB01D401480620200770851 /* NSDate+NetworkClock.m in Sources */ = {isa = PBXBuildFile; fileRef = 5CB01D3D1480620200770851 /* NSDate+NetworkClock.m */; };
+		5CB01D421480665B00770851 /* ntp.hosts in Resources */ = {isa = PBXBuildFile; fileRef = 5CB01D411480665B00770851 /* ntp.hosts */; };
+		5CE9C3C0147FFBB9002B942F /* AsyncUdpSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 5CE9C3BF147FFBB9002B942F /* AsyncUdpSocket.m */; };
 		C9423DF10EF8AA6B003B785B /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9423DF00EF8AA6B003B785B /* CFNetwork.framework */; };
 		C9AB93E20FCF816F0047C0FA /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9AB93E10FCF816F0047C0FA /* AudioToolbox.framework */; };
 		C9AB93F30FCF81790047C0FA /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9AB93F20FCF81790047C0FA /* MediaPlayer.framework */; };
@@ -30,13 +35,24 @@
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		1D3623240D0F684500981E51 /* iPhoneStreamingPlayerAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iPhoneStreamingPlayerAppDelegate.h; sourceTree = "<group>"; };
 		1D3623250D0F684500981E51 /* iPhoneStreamingPlayerAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneStreamingPlayerAppDelegate.m; sourceTree = "<group>"; };
-		1D6058910D05DD3D006BFB54 /* iPhoneStreamingPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPhoneStreamingPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1D6058910D05DD3D006BFB54 /* PotionTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PotionTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		288765A40DF7441C002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		28D7ACF60DDB3853001CB0EB /* iPhoneStreamingPlayerViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iPhoneStreamingPlayerViewController.h; sourceTree = "<group>"; };
 		28D7ACF70DDB3853001CB0EB /* iPhoneStreamingPlayerViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneStreamingPlayerViewController.m; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* iPhoneStreamingPlayer_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iPhoneStreamingPlayer_Prefix.pch; sourceTree = "<group>"; };
+		5CB01D35148060B100770851 /* SynthesizeSingleton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SynthesizeSingleton.h; sourceTree = "<group>"; };
+		5CB01D371480620100770851 /* ios-ntp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ios-ntp.h"; sourceTree = "<group>"; };
+		5CB01D381480620100770851 /* NetAssociation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetAssociation.h; sourceTree = "<group>"; };
+		5CB01D391480620200770851 /* NetAssociation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetAssociation.m; sourceTree = "<group>"; };
+		5CB01D3A1480620200770851 /* NetworkClock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetworkClock.h; sourceTree = "<group>"; };
+		5CB01D3B1480620200770851 /* NetworkClock.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NetworkClock.m; sourceTree = "<group>"; };
+		5CB01D3C1480620200770851 /* NSDate+NetworkClock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDate+NetworkClock.h"; sourceTree = "<group>"; };
+		5CB01D3D1480620200770851 /* NSDate+NetworkClock.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDate+NetworkClock.m"; sourceTree = "<group>"; };
+		5CB01D411480665B00770851 /* ntp.hosts */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ntp.hosts; path = "Shared Resources/ntp.hosts"; sourceTree = "<group>"; };
+		5CE9C3BE147FFBB9002B942F /* AsyncUdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsyncUdpSocket.h; sourceTree = "<group>"; };
+		5CE9C3BF147FFBB9002B942F /* AsyncUdpSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AsyncUdpSocket.m; sourceTree = "<group>"; };
 		C9423DF00EF8AA6B003B785B /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		C9AB93E10FCF816F0047C0FA /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		C9AB93F20FCF81790047C0FA /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
@@ -73,8 +89,18 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				C9C2D8780EB6E09C00A3D071 /* AudioStreamer.m */,
+				5CB01D371480620100770851 /* ios-ntp.h */,
+				5CB01D381480620100770851 /* NetAssociation.h */,
+				5CB01D391480620200770851 /* NetAssociation.m */,
+				5CB01D3A1480620200770851 /* NetworkClock.h */,
+				5CB01D3B1480620200770851 /* NetworkClock.m */,
+				5CB01D3C1480620200770851 /* NSDate+NetworkClock.h */,
+				5CB01D3D1480620200770851 /* NSDate+NetworkClock.m */,
+				5CB01D35148060B100770851 /* SynthesizeSingleton.h */,
+				5CE9C3BE147FFBB9002B942F /* AsyncUdpSocket.h */,
+				5CE9C3BF147FFBB9002B942F /* AsyncUdpSocket.m */,
 				C9C2D8790EB6E09C00A3D071 /* AudioStreamer.h */,
+				C9C2D8780EB6E09C00A3D071 /* AudioStreamer.m */,
 				1D3623240D0F684500981E51 /* iPhoneStreamingPlayerAppDelegate.h */,
 				1D3623250D0F684500981E51 /* iPhoneStreamingPlayerAppDelegate.m */,
 				28D7ACF60DDB3853001CB0EB /* iPhoneStreamingPlayerViewController.h */,
@@ -86,7 +112,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1D6058910D05DD3D006BFB54 /* iPhoneStreamingPlayer.app */,
+				1D6058910D05DD3D006BFB54 /* PotionTestApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -116,6 +142,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				5CB01D411480665B00770851 /* ntp.hosts */,
 				C9E672FF0FE8C55B0033BF43 /* iPhoneStreamingPlayerViewController.xib */,
 				C9E673010FE8C55B0033BF43 /* MainWindow.xib */,
 				C9E673050FE8C5650033BF43 /* playbutton.png */,
@@ -157,7 +184,7 @@
 			);
 			name = iPhoneStreamingPlayer;
 			productName = iPhoneStreamingPlayer;
-			productReference = 1D6058910D05DD3D006BFB54 /* iPhoneStreamingPlayer.app */;
+			productReference = 1D6058910D05DD3D006BFB54 /* PotionTestApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -195,6 +222,7 @@
 				C9E6730A0FE8C5650033BF43 /* stopbutton.png in Resources */,
 				C9E6730B0FE8C5650033BF43 /* loadingbutton.png in Resources */,
 				C9E6730C0FE8C5650033BF43 /* pausebutton.png in Resources */,
+				5CB01D421480665B00770851 /* ntp.hosts in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,6 +237,10 @@
 				1D3623260D0F684500981E51 /* iPhoneStreamingPlayerAppDelegate.m in Sources */,
 				28D7ACF80DDB3853001CB0EB /* iPhoneStreamingPlayerViewController.m in Sources */,
 				C9C2D87A0EB6E09C00A3D071 /* AudioStreamer.m in Sources */,
+				5CE9C3C0147FFBB9002B942F /* AsyncUdpSocket.m in Sources */,
+				5CB01D3E1480620200770851 /* NetAssociation.m in Sources */,
+				5CB01D3F1480620200770851 /* NetworkClock.m in Sources */,
+				5CB01D401480620200770851 /* NSDate+NetworkClock.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,7 +257,8 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = iPhoneStreamingPlayer_Prefix.pch;
 				INFOPLIST_FILE = iPhoneInfo.plist;
-				PRODUCT_NAME = iPhoneStreamingPlayer;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				PRODUCT_NAME = PotionTestApp;
 			};
 			name = Debug;
 		};
@@ -237,7 +270,8 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = iPhoneStreamingPlayer_Prefix.pch;
 				INFOPLIST_FILE = iPhoneInfo.plist;
-				PRODUCT_NAME = iPhoneStreamingPlayer;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				PRODUCT_NAME = PotionTestApp;
 			};
 			name = Release;
 		};
