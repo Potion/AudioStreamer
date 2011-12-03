@@ -617,10 +617,9 @@ void ASReadStreamCallBack
 }
 
 //
-// openReadStream
+// openMulticastReadStream
 //
-// Open the audioFileStream to parse data and the fileHandle as the data
-// source.
+// Listen to multicast stream
 //
 - (BOOL)openMulticastReadStream
 {
@@ -657,6 +656,56 @@ void ASReadStreamCallBack
     }
 	return YES;
 }
+
+//
+// openTCPTimeClient
+//
+// Read track position, duration and time from streaming server
+//
+- (BOOL)openTCPTimeClient
+{
+	@synchronized(self)
+	{
+		NSAssert([[NSThread currentThread] isEqual:internalThread],
+                 @"File stream download must be started on the internalThread");
+        
+        tcp_time_client  =  [[AsyncSocket alloc] initWithDelegate:self];
+        
+        tcp_time_ip = @"192.168.0.180";
+        tcp_time_port = 3203;
+        
+        NSError *error = nil; 
+        if (![tcp_time_client connectToHost:tcp_time_ip onPort:tcp_time_port error:&error])
+        {
+            NSLog(@"Error connecting to TCP time server: %@", error);
+			return NO;
+        }
+        
+        return YES;
+    }
+}
+
+- (void)onSocket:(AsyncSocket *)sock didConnectToHost:(NSString *)remoteHost port:(UInt16)remotePort
+{
+	NSLog(@"Socket is connected!");
+    [tcp_time_client readDataWithTimeout:-1 tag:0];
+}
+
+- (void)onSocket:(AsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag{
+    NSString *msg = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+    
+    NSRange range = {78-25, 24};
+    NSString *sub_msg = [msg substringWithRange:range];
+    NSLog(@"Sub string:%@",sub_msg);
+    
+    NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
+    [dateFormatter setDateFormat:@"MMM dd HH:mm:ss.AAA yyyy"];
+    NSDate *server_date = [dateFormatter dateFromString:sub_msg];
+    NSLog(@"Time receiver:%@",server_date);
+     
+    [tcp_time_client readDataWithTimeout:-1 tag:0];
+}
+
 
 //
 // openReadStream
@@ -835,6 +884,7 @@ void ASReadStreamCallBack
     #if UDP_STREAM
         if (![self openMulticastReadStream])
     #else
+        [self openTCPTimeClient];
         if (![self openReadStream])
     #endif
 		{
@@ -1172,7 +1222,6 @@ cleanup:
 //
 - (void)pause
 {
-    NSLog(@"seekTime: %f",[self progress]);
 	@synchronized(self)
 	{
 		if (state == AS_PLAYING)
@@ -1291,7 +1340,7 @@ int first = 0;
 			{
 				//
 				// Force audio data smaller than one whole buffer to play.
-				//
+				//	
 				self.state = AS_FLUSHING_EOF;
                 NSLog(@"AS_FLUSHING_EOF");
 			}
@@ -1345,21 +1394,21 @@ int first = 0;
 	}
 	else if (eventType == kCFStreamEventHasBytesAvailable)
 	{
-        if ([self progress]>0 && !first) {
-            first++;
-            double seek_time = 50.0;
-            [self seekToTime:seek_time];
-            [self pause];
-            
-            NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
-            [dateFormatter setDateFormat:@"yyyy-mm-dd hh:mm:ss.SSS"];
-            NSDate *date1 = [dateFormatter dateFromString:@"2011-11-27 22:47:44.033"];
-            NSDate *date2 = [dateFormatter dateFromString:@"2011-11-27 22:47:44.225"];
-            NSTimeInterval interval = [date1 timeIntervalSinceDate:date2];
-            
-            NSLog(@"%@",date2);
-            NSLog(@"%f",interval);
-        }
+//        if ([self progress]>0 && !first) {
+//            first++;
+//            double seek_time = 50.0;
+//            [self seekToTime:seek_time];
+//            [self pause];
+//            
+//            NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
+//            [dateFormatter setDateFormat:@"yyyy-mm-dd hh:mm:ss.SSS"];
+//            NSDate *date1 = [dateFormatter dateFromString:@"2011-11-27 22:47:44.033"];
+//            NSDate *date2 = [dateFormatter dateFromString:@"2011-11-27 22:47:44.225"];
+//            NSTimeInterval interval = [date1 timeIntervalSinceDate:date2];
+//            
+//            NSLog(@"%@",date2);
+//            NSLog(@"%f",interval);
+//        }
         
 		if (!httpHeaders)
 		{

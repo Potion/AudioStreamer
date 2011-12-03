@@ -235,6 +235,7 @@
 // Invoked when the AudioStreamer
 // reports that its playback status has changed.
 //
+uint start = 0;
 - (void)playbackStateChanged:(NSNotification *)aNotification
 {
 	if ([streamer isWaiting])
@@ -243,6 +244,12 @@
 	}
 	else if ([streamer isPlaying])
 	{
+        if (start==0) {
+            start++;
+            double seek_time = 150.0;
+            [streamer seekToTime:seek_time];
+            [streamer pause];
+        }
 		[self setButtonImage:[UIImage imageNamed:@"stopbutton.png"]];
 	}
 	else if ([streamer isIdle])
