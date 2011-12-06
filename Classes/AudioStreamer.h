@@ -49,7 +49,7 @@
 								// to zero too often, this value may need to
 								// increase. Min 3, typical 8-24.
 								
-#define kAQDefaultBufSize 2048	// Number of bytes in each audio queue buffer
+#define kAQDefaultBufSize 1540	// Number of bytes in each audio queue buffer
 								// Needs to be big enough to hold a packet of
 								// audio from the audio file. If number is too
 								// large, queuing of audio before playback starts
@@ -181,8 +181,18 @@ extern NSString * const ASStatusChangedNotification;
     AsyncUdpSocket *listenSocket;    
     UInt16 multicast_port;
     NSString* multicast_group;
+    
+    NSNumber* video_position;
+    NSNumber* video_duration;
+    NSNumber* server_time;
+    int udp_count;
+    double intervals[5];
+    double mean_interval;
+    int seek_pause;
 }
 
+@property (readonly) double vid_pos;
+@property (readonly) NSDate *client_date;
 @property AudioStreamerErrorCode errorCode;
 @property (readonly) AudioStreamerState state;
 @property (readonly) double progress;
@@ -200,6 +210,8 @@ extern NSString * const ASStatusChangedNotification;
 - (BOOL)isIdle;
 - (void)seekToTime:(double)newSeekTime;
 - (double)calculatedBitRate;
+- (BOOL)openTCPTimeClient;
+- (BOOL)openMulticastReadStream;
 
 @end
 

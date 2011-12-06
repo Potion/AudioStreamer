@@ -226,6 +226,8 @@ void ASReadStreamCallBack
 @synthesize state;
 @synthesize bitRate;
 @synthesize httpHeaders;
+@synthesize vid_pos;
+@synthesize client_date;
 
 //
 // initWithURL
@@ -625,17 +627,17 @@ void ASReadStreamCallBack
 {
 	@synchronized(self)
 	{
-		NSAssert([[NSThread currentThread] isEqual:internalThread],
-                 @"File stream download must be started on the internalThread");
-		NSAssert(stream == nil, @"Download stream already initialized");
+//		NSAssert([[NSThread currentThread] isEqual:internalThread],
+//                 @"File stream download must be started on the internalThread");
+//		NSAssert(stream == nil, @"Download stream already initialized");
         
         listenSocket  =  [[AsyncUdpSocket alloc] initWithDelegate:self];
         
 		//
 		// We're now ready to receive data
 		//
-		self.state = AS_WAITING_FOR_DATA;
-        NSLog(@"AS_WAITING_FOR_DATA");
+//		self.state = AS_WAITING_FOR_DATA;
+        NSLog(@"AS_WAITING_MULTICAST");
         
         multicast_port = 1234;
         multicast_group = @"239.255.0.1";
@@ -651,11 +653,61 @@ void ASReadStreamCallBack
 			return NO;
         } else {
             NSLog(@"-------- Multicast Client Started --------");
+            udp_count = 0;
+            client_date = [[NSDate alloc] init];
             [listenSocket receiveWithTimeout:-1 tag:0];
         }
     }
 	return YES;
 }
+
+- (BOOL)onUdpSocket:(AsyncUdpSocket *)sock didReceiveData:(NSData *)data withTag:(long)tag 
+           fromHost:(NSString *)host port:(UInt16)port 
+{
+    NSString *msg = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+    NSArray *times = [msg componentsSeparatedByString:@" "];
+    
+    video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
+    video_duration = [NSNumber numberWithDouble:[[times objectAtIndex:1] doubleValue]];
+    server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
+    
+    client_date = [NSDate date];
+    [client_date retain];
+//    NSDate *server_date = [NSDate dateWithTimeIntervalSince1970:[server_time doubleValue]];
+//    NSTimeInterval interval = [client_date timeIntervalSinceDate:server_date];
+    
+//    NSLog(@"Position: %@",video_position);
+//    NSLog(@"Position: %@",video_duration);
+//    NSLog(@"Time: %@",server_time);
+//    NSLog(@"Client Date: %@",client_date);
+//    NSLog(@"Server Date: %@",server_date);
+//    NSLog(@"interval: %f",interval);
+    
+    
+//    if(udp_count < 5){
+//        intervals[udp_count] = interval;
+//        udp_count++;
+//        NSLog(@"interval: %0.3f",interval);
+//        [listenSocket receiveWithTimeout:-1 tag:0];
+//    } else {
+//        double sum = 0;
+//        for(int i=0;i<5;i++){
+//            sum += intervals[i];
+//        }
+//        mean_interval = sum/5;
+//        NSLog(@"mean_interval: %0.3f",mean_interval);
+//        
+        vid_pos = [video_position doubleValue];
+        double buf_time = 3;
+        double seek_to = vid_pos + buf_time;
+        //    [self seekToTime:[video_position doubleValue]+1.7];
+        seek_pause = 1;
+        [self seekToTime:seek_to];
+//    }
+    
+    return true;
+}
+
 
 //
 // openTCPTimeClient
@@ -666,8 +718,8 @@ void ASReadStreamCallBack
 {
 	@synchronized(self)
 	{
-		NSAssert([[NSThread currentThread] isEqual:internalThread],
-                 @"File stream download must be started on the internalThread");
+//		NSAssert([[NSThread currentThread] isEqual:internalThread],
+//                 @"File stream download must be started on the internalThread");
         
         tcp_time_client  =  [[AsyncSocket alloc] initWithDelegate:self];
         
@@ -693,16 +745,29 @@ void ASReadStreamCallBack
 
 - (void)onSocket:(AsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag{
     NSString *msg = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+    NSArray *times = [msg componentsSeparatedByString:@" "];
     
-    NSRange range = {78-25, 24};
-    NSString *sub_msg = [msg substringWithRange:range];
-    NSLog(@"Sub string:%@",sub_msg);
+    video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
+    video_duration = [NSNumber numberWithDouble:[[times objectAtIndex:1] doubleValue]];
+    server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
+
+    NSDate *client_date = [NSDate date];
+    NSDate *server_date = [NSDate dateWithTimeIntervalSince1970:[server_time doubleValue]];
+    NSTimeInterval interval = [client_date timeIntervalSinceDate:server_date];
+
+    NSLog(@"Position: %@",video_position);
+    NSLog(@"Position: %@",video_duration);
+    NSLog(@"Time: %@",server_time);
+    NSLog(@"Client Date: %@",client_date);
+    NSLog(@"Server Date: %@",server_date);
+    NSLog(@"interval: %f",interval);
     
-    NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
-    [dateFormatter setDateFormat:@"MMM dd HH:mm:ss.AAA yyyy"];
-    NSDate *server_date = [dateFormatter dateFromString:sub_msg];
-    NSLog(@"Time receiver:%@",server_date);
-     
+    double vid_pos = [video_position doubleValue];
+    double buf_time = 1.8;
+    double seek = vid_pos + buf_time;
+//    [self seekToTime:[video_position doubleValue]+1.7];
+    [self seekToTime:seek];
+    
     [tcp_time_client readDataWithTimeout:-1 tag:0];
 }
 
@@ -881,12 +946,7 @@ void ASReadStreamCallBack
 		pthread_mutex_init(&queueBuffersMutex, NULL);
 		pthread_cond_init(&queueBufferReadyCondition, NULL);
 
-    #if UDP_STREAM
-        if (![self openMulticastReadStream])
-    #else
-        [self openTCPTimeClient];
         if (![self openReadStream])
-    #endif
 		{
 			goto cleanup;
 		}
@@ -1003,7 +1063,8 @@ cleanup:
 	{
 //        NSDate* fisrt_date = [NSDate date];
 //        NSLog(@"%0.3f",[[NSDate date] timeIntervalSinceDate:fisrt_date]);
-        bitRate = 32000;
+//        bitRate = 32000;
+        seek_pause = 0;
         
 		if (state == AS_PAUSED)
 		{
@@ -1034,6 +1095,8 @@ cleanup:
 //
 - (void)internalSeekToTime:(double)newSeekTime
 {
+    NSLog(@"internalSeekToTime");
+    
 	if ([self calculatedBitRate] == 0.0 || fileLength <= 0)
 	{
 		return;
@@ -1078,6 +1141,8 @@ cleanup:
 		}
 	}
 
+//    [self enqueueBuffer];
+    
 	//
 	// Close the current read straem
 	//
@@ -1261,9 +1326,6 @@ cleanup:
 //
 - (void)stop
 {
-    [self pause];
-    return;
-    
 	@synchronized(self)
 	{
 		if (audioQueue &&
@@ -1410,6 +1472,12 @@ int first = 0;
 //            NSLog(@"%f",interval);
 //        }
         
+        if([self isPlaying] && seek_pause == 1){
+            seek_pause++;
+            [self pause];
+        } else if(seek_pause == 2){
+        }
+        
 		if (!httpHeaders)
 		{
 			CFTypeRef message =
@@ -1495,52 +1563,6 @@ int first = 0;
 			}
 		}
 	}
-}
-
-- (BOOL)onUdpSocket:(AsyncUdpSocket *)sock didReceiveData:(NSData *)data withTag:(long)tag 
-           fromHost:(NSString *)host port:(UInt16)port 
-{
-    UInt32 len = (UInt32)[data length];
-    UInt32 range_len = len-4;
-    
-    UInt8 bytes[kAQDefaultBufSize];
-    
-//    NSRange range = {4, MIN(range_len,kAQDefaultBufSize)};    
-//    [data getBytes:bytes range:range];
-    
-    [data getBytes:bytes length:len];
-    range_len = len;
-
-//    printf("------------------------------------------------  %lu\n", range_len);
-//    for (int i=0; i<8; ++i) {
-//        printf(" %x",bytes[i]);
-//    }
-//    printf("\n");
-//    NSLog(@"-----------------------------------------------------------------------------\n\
-//          received multicast packet with size: %lu\n%@", len, bytes);
-
-    if (audioFileStream == nil)
-    {
-        // create an audio file stream parser
-        err = AudioFileStreamOpen(self, MyPropertyListenerProc, MyPacketsProc, 
-                                  kAudioFileMP3Type, &audioFileStream);
-        if (err)
-        {
-            [self failWithErrorCode:AS_FILE_STREAM_OPEN_FAILED];
-            return false;
-        }
-    }
-    
-    err = AudioFileStreamParseBytes(audioFileStream, range_len, bytes, 0);
-    if (err)
-    {
-        [self failWithErrorCode:AS_FILE_STREAM_PARSE_BYTES_FAILED];
-        return false;
-    }
-    
-    [listenSocket receiveWithTimeout:-1 tag:0];
-    
-    return true;
 }
 
 //

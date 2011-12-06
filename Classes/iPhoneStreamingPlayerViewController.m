@@ -106,7 +106,7 @@
 	NSURL *url = [NSURL URLWithString:escapedValue];
 	streamer = [[AudioStreamer alloc] initWithURL:url];
 	
-	progressUpdateTimer =
+	progressUpdateTimer =	
 		[NSTimer
 			scheduledTimerWithTimeInterval:0.001
 			target:self
@@ -244,14 +244,21 @@ uint start = 0;
 	}
 	else if ([streamer isPlaying])
 	{
-        if (start==0) {
+        if (start<1) {
+            [streamer openMulticastReadStream];
             start++;
-            double seek_time = 150.0;
-            [streamer seekToTime:seek_time];
-            [streamer pause];
         }
+//            double seek_time = 150.0;
+//            [streamer seekToTime:seek_time];
+//            [streamer pause];
+//        }
 		[self setButtonImage:[UIImage imageNamed:@"stopbutton.png"]];
 	}
+	else if ([streamer isPaused] && (start<2))
+	{
+        start++;
+		[self setButtonImage:[UIImage imageNamed:@"loadingbutton.png"]];
+    }
 	else if ([streamer isIdle])
 	{
 		[self destroyStreamer];
@@ -280,6 +287,19 @@ uint start = 0;
 					duration]];
 			[progressSlider setEnabled:YES];
 			[progressSlider setValue:100 * progress / duration];
+            
+            if(start == 2){
+                double buf_time = progress - streamer.vid_pos;
+                NSDate* cur_date = [NSDate date];
+                NSDate* client_date = streamer.client_date;
+                NSTimeInterval interval = [cur_date timeIntervalSinceDate:client_date];
+                double delta = buf_time-interval;
+                if(delta<=0){
+                    start++;
+                    [streamer pause];
+                }
+            }
+            
 		}
 		else
 		{
