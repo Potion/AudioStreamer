@@ -228,6 +228,7 @@ void ASReadStreamCallBack
 @synthesize httpHeaders;
 @synthesize vid_pos;
 @synthesize client_date;
+@synthesize listenSocket;    
 
 //
 // initWithURL
@@ -627,35 +628,42 @@ void ASReadStreamCallBack
 {
 	@synchronized(self)
 	{
-//		NSAssert([[NSThread currentThread] isEqual:internalThread],
-//                 @"File stream download must be started on the internalThread");
-//		NSAssert(stream == nil, @"Download stream already initialized");
-        
         listenSocket  =  [[AsyncUdpSocket alloc] initWithDelegate:self];
         
 		//
 		// We're now ready to receive data
 		//
-//		self.state = AS_WAITING_FOR_DATA;
         NSLog(@"AS_WAITING_MULTICAST");
         
-        multicast_port = 1234;
-        multicast_group = @"239.255.0.1";
+//        multicast_port = 1234;
+//        multicast_group = @"239.255.0.1";
         
-        NSError *error = nil; 
-        if(![listenSocket bindToPort:multicast_port error:&error]){
-			[self presentAlertWithTitle:NSLocalizedStringFromTable(@"File Error", @"Errors", nil)
-								message:NSLocalizedStringFromTable(@"Unable to configure network read stream.", @"Errors", nil)];
-			return NO;
-        } else if(![listenSocket joinMulticastGroup:multicast_group error:&error]) { 
-			[self presentAlertWithTitle:NSLocalizedStringFromTable(@"File Error", @"Errors", nil)
-								message:NSLocalizedStringFromTable(@"Unable to configure network read stream.", @"Errors", nil)];
-			return NO;
-        } else {
-            NSLog(@"-------- Multicast Client Started --------");
-            udp_count = 0;
-            client_date = [[NSDate alloc] init];
+        int i=0;
+        for (i=1; i<17; i++) {
+            NSString* ip = @"239.255.0.";
+            multicast_group = [ip stringByAppendingString:[NSString stringWithFormat:@"%d", i]];
+
+            multicast_port = 1234+i;
+            
+            NSError *error = nil;
+            if(![listenSocket bindToPort:multicast_port error:&error]){
+                continue;
+            } else if(![listenSocket joinMulticastGroup:multicast_group error:&error]) { 
+                continue;
+            } else {
+                break;
+            }
+        }
+        if (i>0 && i<17) {
+            NSLog(@"Listening to %@:%d",multicast_group,multicast_port);
+            if(!client_date){
+                client_date = [[[NSDate alloc] init] retain];
+            }
             [listenSocket receiveWithTimeout:-1 tag:0];
+        } else {
+            [self presentAlertWithTitle:NSLocalizedStringFromTable(@"File Error", @"Errors", nil)
+                                message:NSLocalizedStringFromTable(@"Unable to configure network read stream.", @"Errors", nil)];
+            return NO;
         }
     }
 	return YES;
@@ -667,110 +675,74 @@ void ASReadStreamCallBack
     NSString *msg = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
     NSArray *times = [msg componentsSeparatedByString:@" "];
     
-    video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
-    video_duration = [NSNumber numberWithDouble:[[times objectAtIndex:1] doubleValue]];
-    server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
+//    udp_data udp;
+//    
+//    udp.video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
+//    [udp.video_position retain];
+//    
+//    udp.video_duration = [NSNumber numberWithDouble:[[times objectAtIndex:1] doubleValue]];
+//    [udp.video_duration retain];
+//    
+//    udp.client_date = [NSDate date];
+//    [udp.client_date retain];
+//    
+//    NSNumber* server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
+//    udp.server_date = [NSDate dateWithTimeIntervalSince1970:[server_time doubleValue]];
+//    [udp.server_date retain];
+//    
+//    udp.interval = [udp.client_date timeIntervalSinceDate:udp.server_date];
+//    NSLog(@"interval: %0.3f",udp.interval);
+//    
+//    udps.push_back(udp);
     
-    client_date = [NSDate date];
-    [client_date retain];
-//    NSDate *server_date = [NSDate dateWithTimeIntervalSince1970:[server_time doubleValue]];
-//    NSTimeInterval interval = [client_date timeIntervalSinceDate:server_date];
-    
-//    NSLog(@"Position: %@",video_position);
 //    NSLog(@"Position: %@",video_duration);
 //    NSLog(@"Time: %@",server_time);
 //    NSLog(@"Client Date: %@",client_date);
 //    NSLog(@"Server Date: %@",server_date);
 //    NSLog(@"interval: %f",interval);
     
+    if(intervals==nil){
+        intervals = [[NSMutableArray alloc] init]; 
+    }
     
-//    if(udp_count < 5){
-//        intervals[udp_count] = interval;
-//        udp_count++;
-//        NSLog(@"interval: %0.3f",interval);
-//        [listenSocket receiveWithTimeout:-1 tag:0];
-//    } else {
-//        double sum = 0;
-//        for(int i=0;i<5;i++){
-//            sum += intervals[i];
-//        }
-//        mean_interval = sum/5;
-//        NSLog(@"mean_interval: %0.3f",mean_interval);
-//        
-        vid_pos = [video_position doubleValue];
+    NSNumber* cur_video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
+//    [video_position retain];
+    
+    client_date = [NSDate date];
+    [client_date retain];
+    
+    NSNumber* cur_server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
+    NSDate* cur_server_date = [NSDate dateWithTimeIntervalSince1970:[cur_server_time doubleValue]];
+    
+    NSNumber* cur_interval = [NSNumber numberWithDouble:[client_date timeIntervalSinceDate:cur_server_date]];
+    [intervals addObject:cur_interval];
+//    NSLog(@"interval: %@",cur_interval);
+    
+    unsigned count = [intervals count];
+//    NSLog(@"count: %d",count);
+    if(count < 10){
+        [listenSocket receiveWithTimeout:-1 tag:0];
+    } else {
+        double sum = 0;
+        
+        while (count--) {
+            sum += [[intervals objectAtIndex:count] doubleValue];
+        }
+        double mean_interval = sum/[intervals count];
+        NSLog(@"mean_interval: %0.3f",mean_interval);
+        
+        double vid_pos_delta = [cur_interval doubleValue] - mean_interval;
+        NSLog(@"vid_pos_delta: %0.3f",vid_pos_delta);
+        
+        vid_pos = [cur_video_position doubleValue] + vid_pos_delta;
         double buf_time = 3;
         double seek_to = vid_pos + buf_time;
-        //    [self seekToTime:[video_position doubleValue]+1.7];
-        seek_pause = 1;
+        seek_pause = true;
         [self seekToTime:seek_to];
-//    }
+    }
     
     return true;
 }
-
-
-//
-// openTCPTimeClient
-//
-// Read track position, duration and time from streaming server
-//
-- (BOOL)openTCPTimeClient
-{
-	@synchronized(self)
-	{
-//		NSAssert([[NSThread currentThread] isEqual:internalThread],
-//                 @"File stream download must be started on the internalThread");
-        
-        tcp_time_client  =  [[AsyncSocket alloc] initWithDelegate:self];
-        
-        tcp_time_ip = @"192.168.0.180";
-        tcp_time_port = 3203;
-        
-        NSError *error = nil; 
-        if (![tcp_time_client connectToHost:tcp_time_ip onPort:tcp_time_port error:&error])
-        {
-            NSLog(@"Error connecting to TCP time server: %@", error);
-			return NO;
-        }
-        
-        return YES;
-    }
-}
-
-- (void)onSocket:(AsyncSocket *)sock didConnectToHost:(NSString *)remoteHost port:(UInt16)remotePort
-{
-	NSLog(@"Socket is connected!");
-    [tcp_time_client readDataWithTimeout:-1 tag:0];
-}
-
-- (void)onSocket:(AsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag{
-    NSString *msg = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
-    NSArray *times = [msg componentsSeparatedByString:@" "];
-    
-    video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
-    video_duration = [NSNumber numberWithDouble:[[times objectAtIndex:1] doubleValue]];
-    server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
-
-    NSDate *client_date = [NSDate date];
-    NSDate *server_date = [NSDate dateWithTimeIntervalSince1970:[server_time doubleValue]];
-    NSTimeInterval interval = [client_date timeIntervalSinceDate:server_date];
-
-    NSLog(@"Position: %@",video_position);
-    NSLog(@"Position: %@",video_duration);
-    NSLog(@"Time: %@",server_time);
-    NSLog(@"Client Date: %@",client_date);
-    NSLog(@"Server Date: %@",server_date);
-    NSLog(@"interval: %f",interval);
-    
-    double vid_pos = [video_position doubleValue];
-    double buf_time = 1.8;
-    double seek = vid_pos + buf_time;
-//    [self seekToTime:[video_position doubleValue]+1.7];
-    [self seekToTime:seek];
-    
-    [tcp_time_client readDataWithTimeout:-1 tag:0];
-}
-
 
 //
 // openReadStream
@@ -1064,7 +1036,7 @@ cleanup:
 //        NSDate* fisrt_date = [NSDate date];
 //        NSLog(@"%0.3f",[[NSDate date] timeIntervalSinceDate:fisrt_date]);
 //        bitRate = 32000;
-        seek_pause = 0;
+        seek_pause = false;
         
 		if (state == AS_PAUSED)
 		{
@@ -1341,6 +1313,7 @@ cleanup:
 				[self failWithErrorCode:AS_AUDIO_QUEUE_STOP_FAILED];
 				return;
 			}
+            [listenSocket release];
 		}
 		else if (state != AS_INITIALIZED)
 		{
@@ -1472,10 +1445,9 @@ int first = 0;
 //            NSLog(@"%f",interval);
 //        }
         
-        if([self isPlaying] && seek_pause == 1){
-            seek_pause++;
+        if([self isPlaying] && seek_pause){
+            seek_pause = false;
             [self pause];
-        } else if(seek_pause == 2){
         }
         
 		if (!httpHeaders)

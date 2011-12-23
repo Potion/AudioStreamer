@@ -112,6 +112,10 @@ typedef enum
 
 extern NSString * const ASStatusChangedNotification;
 
+//#import <vector>
+
+//using namespace std;
+
 @interface AudioStreamer : NSObject
 {
 	NSURL *url;
@@ -178,19 +182,25 @@ extern NSString * const ASStatusChangedNotification;
     NSString* tcp_time_ip;
     UInt16 tcp_time_port;
 
-    AsyncUdpSocket *listenSocket;    
     UInt16 multicast_port;
     NSString* multicast_group;
     
-    NSNumber* video_position;
-    NSNumber* video_duration;
-    NSNumber* server_time;
-    int udp_count;
-    double intervals[5];
-    double mean_interval;
-    int seek_pause;
+    bool seek_pause;
+    
+//    struct udp_data{
+//        NSNumber* video_position;
+//        NSNumber* video_duration;
+//        NSDate *client_date;
+//        NSDate *server_date;
+//        double interval;
+//    };
+//    vector<udp_data> udps;
+    
+//    NSMutableArray* video_positions;
+    NSMutableArray* intervals;
 }
 
+@property (readonly) AsyncUdpSocket *listenSocket;
 @property (readonly) double vid_pos;
 @property (readonly) NSDate *client_date;
 @property AudioStreamerErrorCode errorCode;
@@ -210,7 +220,7 @@ extern NSString * const ASStatusChangedNotification;
 - (BOOL)isIdle;
 - (void)seekToTime:(double)newSeekTime;
 - (double)calculatedBitRate;
-- (BOOL)openTCPTimeClient;
+//- (BOOL)openTCPTimeClient;
 - (BOOL)openMulticastReadStream;
 
 @end

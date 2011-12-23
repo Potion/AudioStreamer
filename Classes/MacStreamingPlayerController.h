@@ -33,6 +33,7 @@
 	IBOutlet NSSlider *progressSlider;
 	AudioStreamer *streamer;
 	NSTimer *progressUpdateTimer;
+    uint start;
 }
 
 - (IBAction)buttonPressed:(id)sender;
