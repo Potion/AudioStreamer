@@ -656,9 +656,6 @@ void ASReadStreamCallBack
         }
         if (i>0 && i<17) {
             NSLog(@"Listening to %@:%d",multicast_group,multicast_port);
-            if(!client_date){
-                client_date = [[[NSDate alloc] init] retain];
-            }
             [listenSocket receiveWithTimeout:-1 tag:0];
         } else {
             [self presentAlertWithTitle:NSLocalizedStringFromTable(@"File Error", @"Errors", nil)
@@ -701,15 +698,19 @@ void ASReadStreamCallBack
 //    NSLog(@"Server Date: %@",server_date);
 //    NSLog(@"interval: %f",interval);
     
+    if(client_date==nil){
+        client_date = [[NSDate alloc] init];
+    }
+    
     if(intervals==nil){
-        intervals = [[NSMutableArray alloc] init]; 
+        intervals = [[[NSMutableArray alloc] init] retain];
     }
     
     NSNumber* cur_video_position = [NSNumber numberWithDouble:[[times objectAtIndex:0] doubleValue]];
 //    [video_position retain];
     
-    client_date = [NSDate date];
-    [client_date retain];
+    [client_date release];
+    client_date = [[NSDate date] retain];
     
     NSNumber* cur_server_time = [NSNumber numberWithDouble:[[times objectAtIndex:2] doubleValue]];
     NSDate* cur_server_date = [NSDate dateWithTimeIntervalSince1970:[cur_server_time doubleValue]];
@@ -720,18 +721,23 @@ void ASReadStreamCallBack
     
     unsigned count = [intervals count];
 //    NSLog(@"count: %d",count);
-    if(count < 10){
+    if(count < 20){
         [listenSocket receiveWithTimeout:-1 tag:0];
     } else {
-        double sum = 0;
+//        double sum = 0;
+//        
+//        while (count--) {
+//            sum += [[intervals objectAtIndex:count] doubleValue];
+//        }
+//        double mean_interval = sum/[intervals count];
+//        NSLog(@"mean_interval: %0.3f",mean_interval);
         
-        while (count--) {
-            sum += [[intervals objectAtIndex:count] doubleValue];
-        }
-        double mean_interval = sum/[intervals count];
-        NSLog(@"mean_interval: %0.3f",mean_interval);
-        
-        double vid_pos_delta = [cur_interval doubleValue] - mean_interval;
+        NSArray *sorted = [intervals sortedArrayUsingSelector:@selector(compare:)];// Sort the array by value
+        NSUInteger middle = [sorted count] / 2;                                    // Find the index of the middle element
+        double median = [[sorted objectAtIndex:middle] doubleValue];               // Get the middle element
+        NSLog(@"mean_interval: %0.3f",median);
+
+        double vid_pos_delta = [cur_interval doubleValue] - median;
         NSLog(@"vid_pos_delta: %0.3f",vid_pos_delta);
         
         vid_pos = [cur_video_position doubleValue] + vid_pos_delta;
@@ -743,6 +749,7 @@ void ASReadStreamCallBack
     
     return true;
 }
+
 
 //
 // openReadStream

@@ -23,7 +23,7 @@
 
 #import "iPhoneStreamingPlayerAppDelegate.h"
 #import "iPhoneStreamingPlayerViewController.h"
-#import "ios-ntp.h"
+//#import "ios-ntp.h"
 
 @implementation iPhoneStreamingPlayerAppDelegate
 
@@ -37,6 +37,8 @@
     [window addSubview:viewController.view];
     [window makeKeyAndVisible];
 	
+    viewController.app_state = 0;
+    
 	[viewController buttonPressed:nil];
     
     

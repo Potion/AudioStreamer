@@ -36,6 +36,8 @@
 	NSTimer *progressUpdateTimer;
 }
 
+@property (readwrite) UInt32 app_state;
+
 - (IBAction)buttonPressed:(id)sender;
 - (void)spinButton;
 - (void)updateProgress:(NSTimer *)aNotification;

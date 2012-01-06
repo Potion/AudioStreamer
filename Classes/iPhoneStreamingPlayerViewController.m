@@ -27,7 +27,10 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import <CFNetwork/CFNetwork.h>
 
+
 @implementation iPhoneStreamingPlayerViewController
+
+@synthesize app_state;
 
 //
 // setButtonImage:
@@ -208,6 +211,7 @@
 	}
 	else
 	{
+        app_state = 0;
 		[streamer stop];
 	}
 }
@@ -235,7 +239,6 @@
 // Invoked when the AudioStreamer
 // reports that its playback status has changed.
 //
-uint start = 0;
 - (void)playbackStateChanged:(NSNotification *)aNotification
 {
 	if ([streamer isWaiting])
@@ -244,19 +247,15 @@ uint start = 0;
 	}
 	else if ([streamer isPlaying])
 	{
-        if (start<1) {
+        if (app_state<1) {
             [streamer openMulticastReadStream];
-            start++;
+            app_state++;
         }
-//            double seek_time = 150.0;
-//            [streamer seekToTime:seek_time];
-//            [streamer pause];
-//        }
 		[self setButtonImage:[UIImage imageNamed:@"stopbutton.png"]];
 	}
-	else if ([streamer isPaused] && (start<2))
+	else if ([streamer isPaused] && (app_state<2))
 	{
-        start++;
+        app_state++;
 		[self setButtonImage:[UIImage imageNamed:@"loadingbutton.png"]];
     }
 	else if ([streamer isIdle])
@@ -288,18 +287,17 @@ uint start = 0;
 			[progressSlider setEnabled:YES];
 			[progressSlider setValue:100 * progress / duration];
             
-            if(start == 2){
+            if(app_state == 2){
                 double buf_time = progress - streamer.vid_pos;
                 NSDate* cur_date = [NSDate date];
                 NSDate* client_date = streamer.client_date;
                 NSTimeInterval interval = [cur_date timeIntervalSinceDate:client_date];
                 double delta = buf_time-interval;
                 if(delta<=0){
-                    start++;
+                    app_state++;
                     [streamer pause];
                 }
             }
-            
 		}
 		else
 		{
